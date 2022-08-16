@@ -58,7 +58,7 @@ contract INRCToken is ERC20, Ownable, ReentrancyGuard {
             revert MintToZeroAddress();
         }
 
-        uint256 amountWithoutDecimals = amount;
+        uint256 amountWithoutDecimals = amount / (10 ** 18);
         address exchangeTokenAddress = exchangeTokens[exchangeTokenName];
         if(exchangeTokenAddress == address(0x0)) {
             revert InvalidExchangeToken();
@@ -76,7 +76,7 @@ contract INRCToken is ERC20, Ownable, ReentrancyGuard {
         ExchangeToken.transferFrom(receiver, address(this), amount);
 
         // The conversion rate of 1:80 can be kept in mappings if more currencies are added
-        uint256 tokensToMint = amountWithoutDecimals * 80 * (10 ** 18);
+        uint256 tokensToMint = amountWithoutDecimals * 80;
         _mint(receiver, tokensToMint);
     }
 

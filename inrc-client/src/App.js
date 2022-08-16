@@ -19,7 +19,7 @@ function App() {
   const [dusdcCBalance, setDUSDCBalance] = useState();
   const [inrcTokenBalance, setINRCTokenBalance] = useState();
   const [dusdcDecimals, setDemoUSDCDecimals] = useState();
-  const [dusdcSymbol, setDUSDCcSymbol] = useState();
+  const [dusdcSymbol, setDUSDCSymbol] = useState();
   const [inrcDecimals, setINRCTokenDecimals] = useState();
   const [ethBalance, setEthBalance] = useState();
   const [estimatedOutput, setEstimatedOutput] = useState('');
@@ -29,9 +29,12 @@ function App() {
   const [inrcValue, setINRCValue] = useState();
   const [isActive, toggleLoader] = useState();
   const [errors, setErrors] = useState({});
-  
+  const [totalDUSDCCharged, setDUSDCCharged] = useState();
+  const [totalINRCCharged, setINRCCharged] = useState();
+
   useEffect(() => {
     async function load() {
+      toggleLoader(true);
       const web3 = new Web3(Web3.givenProvider || 'http://localhost:7545');
       const accounts = await web3.eth.requestAccounts();
       setAccount(accounts[0]);
@@ -46,7 +49,7 @@ function App() {
       const dusdBal = await demoUSDCContract.methods.balanceOf(accounts[0]).call();
       setDUSDCBalance(dusdBal/(10 ** dusdDecimals));
       const dusdSymbol = await demoUSDCContract.methods.symbol().call();
-      setDUSDCcSymbol(dusdSymbol);
+      setDUSDCSymbol(dusdSymbol);
 
       const inrcTokenContract = new web3.eth.Contract(INRC_TOKEN_CONTRACT_ABI, INRC_TOKEN_CONTRACT_ADDRESS);
       setINRCTokenContract(inrcTokenContract);
@@ -54,26 +57,34 @@ function App() {
       setINRCTokenDecimals(inrcDecimals);
       const inrcBal = await inrcTokenContract.methods.balanceOf(accounts[0]).call();
       setINRCTokenBalance(inrcBal/(10 ** inrcDecimals)); 
+
+      toggleLoader(false);
     }
     load();
   }, []);
 
-  const updateError = (key, value) => {
-    errors[key] = value;
-    setErrors({...errors});
-    setTimeout(() => {
-      errors[key] = '';
-    }, 3000);
-  } 
+  // function updateError(key, value) {
+  //   setTimeout(() => {
+  //     errors[key] = null;
+  //     setErrors(errors);
+  //   }, 3000);
+  //   errors[key] = value;
+  //   setErrors(errors);
+  // }
 
   function handleUSDCInput(value) {
     const balance = dusdcCBalance ? dusdcCBalance * (10 ** dusdcDecimals) : 0;
     const requiredAmt = value === 0 || value === null ? 0 : value * (10 ** dusdcDecimals);
     const transactionFee = requiredAmt * 5 / 1000;
+    
     setDUSDCTransactionFee(value === 0 || value === null ? '' : `${transactionFee / (10 ** dusdcDecimals)}`);
     if(balance < (requiredAmt + transactionFee)) {
-      updateError(`usdcAmount`, `Low USDC balance`);
+      setErrors({...errors, usdcAmount: `Low USDC balance! Transaction will likely fail!`});
+      setTimeout(() => {
+        setErrors({...errors, usdcAmount: ""});
+      }, 3000);
     } else {
+      setErrors({...errors, usdcAmount: ""});
       setDUSDCValue(value);
       setEstimatedOutput(value === 0 || value === null ? '' : `${value * 80} INRC`);
     }
@@ -86,8 +97,12 @@ function App() {
 
     setINRCTransactionFee(value === 0 || value === null ? '' : `${transactionFee / (10 ** inrcDecimals)}`);
     if(balance < (requiredAmt + transactionFee)) {
-      updateError(`usdcAmount`, `Low INRC balance`);
+      setErrors({...errors, inrcAmount: `Low INRC balance! Transaction will likely fail!`});
+      setTimeout(() => {
+        setErrors({...errors, inrcAmount: ""});
+      }, 3000);
     } else {
+      setErrors({...errors, inrcAmount: ""});
       setINRCValue(value);
       setEstimatedOutput(value === 0 || value === null ? '' : `${value / 80} USDC`);
     }
@@ -97,19 +112,16 @@ function App() {
     event.preventDefault();
     toggleLoader(true);
     let amount = `${dusdcValue * (10 ** dusdcDecimals)}`;
-    console.log('AMMOUNT: ', amount);
     let totalAmount = `${(dusdcValue * (10 ** dusdcDecimals)) + (dusdcTransactionFee * (10 ** dusdcDecimals))}`;
-    console.log('AMMOUNT2: ', `${dusdcValue * (10 ** dusdcDecimals)}`);
     // Approve INRC_TOKEN_CONTRACT_ADDRESS to access dusd value from user
     try {
       await demoUSDCContract.methods.approve(INRC_TOKEN_CONTRACT_ADDRESS, totalAmount).send({from: account});
       await inrcTokenContract.methods.buy(dusdcSymbol, amount).send({from: account});;
     } catch(error) {
-      // setErrors({...errors, buyError: `Error: ${error.message}`});
-      // setTimeout(() => {
-      //   setErrors({...errors, buyError: ""});
-      // }, 3000);
-      updateError(`buyError`, `Error: ${error.message}`);
+      setErrors({...errors, buyError: `Error: ${error.message}`});
+      setTimeout(() => {
+        setErrors({...errors, buyError: ""});
+      }, 3000);
     } finally {
       toggleLoader(false);
     }
@@ -125,11 +137,10 @@ function App() {
       await inrcTokenContract.methods.approve(INRC_TOKEN_CONTRACT_ADDRESS, totalAmount).send({from: account});
       await inrcTokenContract.methods.redeem(dusdcSymbol, amount).send({from: account});;
     } catch(error) {
-      // setErrors({...errors, redeemError: `Error: ${error.message}`});
-      // setTimeout(() => {
-      //   setErrors({...errors, redeemError: ""});
-      // }, 3000);
-      updateError(`redeemError`, `Error: ${error.message}`);
+      setErrors({...errors, redeemError: `Error: ${error.message}`});
+      setTimeout(() => {
+        setErrors({...errors, redeemError: ""});
+      }, 3000);
     } finally {
       toggleLoader(false);
     }
