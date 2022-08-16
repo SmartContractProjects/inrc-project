@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-pragma solidity 0.8.2;
+pragma solidity 0.8.11.0;
 
 contract Migrations {
     address public owner;
@@ -32,7 +32,7 @@ contract Migrations {
         if (msg.sender == owner) _;
     }
 
-    constructor() public {
+    constructor() {
         owner = msg.sender;
     }
 

@@ -30,7 +30,7 @@ import "./Migrations.sol";
  * SOFTWARE.
  */
 
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.11.0;
 
 contract DemoUSDC is Ownable, ERC20 {   
     uint8 private _decimals;
@@ -46,7 +46,7 @@ contract DemoUSDC is Ownable, ERC20 {
         _decimals = decimals_;
     }
 
-    constructor() public Ownable() ERC20("DemoUSDC", "USDC") {
+    constructor() Ownable() ERC20("DemoUSDC", "USDC") {
         setupDecimals(6);
     }
 
