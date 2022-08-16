@@ -124,6 +124,6 @@ contract INRCToken is ERC20, Ownable, ReentrancyGuard {
         this.transferFrom(receiver, address(this), inrcAmount);
 
         // Transfering exchange token(USDC) back to user
-        ExchangeToken.transfer(address(this), receiver, exchangeTokenAmoutWithDecimals);
+        ExchangeToken.transfer(receiver, exchangeTokenAmoutWithDecimals);
     }
 }
