@@ -48,35 +48,36 @@ contract INRCToken is ERC20, Ownable, ReentrancyGuard {
      * 1. The exchange token should be present in exchangeTokens mappings. These can be added by the owner only.
      * 2. User should approve the INRCToken contract to transfer the required amount of particular exchange token
      */
-    function buy(string memory exchangeTokenName, uint256 amount) public {
+    function buy(string memory exchangeTokenName, uint256 exchangeAmount) public {
         address receiver = msg.sender;
-        if (amount == 0) {
+        if (exchangeAmount == 0) {
             revert MintZeroQuantity();
         }
 
         if (msg.sender == address(0)) {
             revert MintToZeroAddress();
         }
-
-        uint256 amountWithoutDecimals = amount / (10 ** 18);
+        
         address exchangeTokenAddress = exchangeTokens[exchangeTokenName];
         if(exchangeTokenAddress == address(0x0)) {
             revert InvalidExchangeToken();
         }
         ExchangeToken = IExchangeToken(exchangeTokenAddress);
         uint256 exchangeTokenBalance = ExchangeToken.balanceOf(receiver);
+        
+        uint256 amountWithoutDecimals = exchangeAmount / (10**uint(ExchangeToken.decimals()));
 
-        uint256 transactionFee = amount * 5 / 1000;
-        amount = amount + transactionFee;
+        uint256 transactionFee = exchangeAmount * 5 / 1000;
+        exchangeAmount += transactionFee;
 
-        if(exchangeTokenBalance < amount) {
+        if(exchangeTokenBalance < exchangeAmount) {
             revert LowExchangeTokenBalance();
         }
 
-        ExchangeToken.transferFrom(receiver, address(this), amount);
+        ExchangeToken.transferFrom(receiver, address(this), exchangeAmount);
 
         // The conversion rate of 1:80 can be kept in mappings if more currencies are added
-        uint256 tokensToMint = amountWithoutDecimals * 80;
+        uint256 tokensToMint = amountWithoutDecimals * 80 * (10**18);
         _mint(receiver, tokensToMint);
     }
 
