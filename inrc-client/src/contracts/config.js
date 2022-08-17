@@ -1,8 +1,5 @@
-// https://rinkeby.etherscan.io/address/0xED123981920052b2b6c4c6f13e7aC7918b800520 -> INRCToken
-// https://rinkeby.etherscan.io/address/0x12D3424BdC7a9FC2f6F9D794810641662967a412 -> DemoUSDC
-
 export const DEMO_DUSDC_CONTRACT_ADDRESS = '0x12D3424BdC7a9FC2f6F9D794810641662967a412';
-export const INRC_TOKEN_CONTRACT_ADDRESS = '0x76634a62888e6AE208b10BFF1621F546ac4a4eaB';
+export const INRC_TOKEN_CONTRACT_ADDRESS = '0x9611dCE12B55Fd332C626969481b009A43e8dcb8';
 export const DEMO_DUSDC_CONTRACT_ABI = [
     {
       "inputs": [],
@@ -821,7 +818,7 @@ export const INRC_TOKEN_CONTRACT_ABI = [
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "exchangeAmount",
         "type": "uint256"
       }
     ],

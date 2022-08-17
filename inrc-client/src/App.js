@@ -29,37 +29,39 @@ function App() {
   const [inrcValue, setINRCValue] = useState();
   const [isActive, toggleLoader] = useState();
   const [errors, setErrors] = useState({});
+  const [messages, setMessages] = useState({});
   const [totalDUSDCCharged, setDUSDCCharged] = useState();
   const [totalINRCCharged, setINRCCharged] = useState();
 
+  async function load() {
+    toggleLoader(true);
+    const web3 = new Web3(Web3.givenProvider || 'http://localhost:7545');
+    const accounts = await web3.eth.requestAccounts();
+    setAccount(accounts[0]);
+
+    var eth = await web3.eth.getBalance(accounts[0]);
+    setEthBalance(Web3.utils.fromWei(eth, 'ether'));
+
+    const demoUSDCContract = new web3.eth.Contract(DEMO_DUSDC_CONTRACT_ABI, DEMO_DUSDC_CONTRACT_ADDRESS);
+    setDemoUSDCContract(demoUSDCContract);
+    const dusdDecimals = await demoUSDCContract.methods.decimals().call();
+    setDemoUSDCDecimals(dusdDecimals);
+    const dusdBal = await demoUSDCContract.methods.balanceOf(accounts[0]).call();
+    setDUSDCBalance(dusdBal/(10 ** dusdDecimals));
+    const dusdSymbol = await demoUSDCContract.methods.symbol().call();
+    setDUSDCSymbol(dusdSymbol);
+
+    const inrcTokenContract = new web3.eth.Contract(INRC_TOKEN_CONTRACT_ABI, INRC_TOKEN_CONTRACT_ADDRESS);
+    setINRCTokenContract(inrcTokenContract);
+    const inrcDecimals = await inrcTokenContract.methods.decimals().call()
+    setINRCTokenDecimals(inrcDecimals);
+    const inrcBal = await inrcTokenContract.methods.balanceOf(accounts[0]).call();
+    setINRCTokenBalance(inrcBal/(10 ** inrcDecimals)); 
+
+    toggleLoader(false);
+  }
+
   useEffect(() => {
-    async function load() {
-      toggleLoader(true);
-      const web3 = new Web3(Web3.givenProvider || 'http://localhost:7545');
-      const accounts = await web3.eth.requestAccounts();
-      setAccount(accounts[0]);
-
-      var eth = await web3.eth.getBalance(accounts[0]);
-      setEthBalance(Web3.utils.fromWei(eth, 'ether'));
-
-      const demoUSDCContract = new web3.eth.Contract(DEMO_DUSDC_CONTRACT_ABI, DEMO_DUSDC_CONTRACT_ADDRESS);
-      setDemoUSDCContract(demoUSDCContract);
-      const dusdDecimals = await demoUSDCContract.methods.decimals().call();
-      setDemoUSDCDecimals(dusdDecimals);
-      const dusdBal = await demoUSDCContract.methods.balanceOf(accounts[0]).call();
-      setDUSDCBalance(dusdBal/(10 ** dusdDecimals));
-      const dusdSymbol = await demoUSDCContract.methods.symbol().call();
-      setDUSDCSymbol(dusdSymbol);
-
-      const inrcTokenContract = new web3.eth.Contract(INRC_TOKEN_CONTRACT_ABI, INRC_TOKEN_CONTRACT_ADDRESS);
-      setINRCTokenContract(inrcTokenContract);
-      const inrcDecimals = await inrcTokenContract.methods.decimals().call()
-      setINRCTokenDecimals(inrcDecimals);
-      const inrcBal = await inrcTokenContract.methods.balanceOf(accounts[0]).call();
-      setINRCTokenBalance(inrcBal/(10 ** inrcDecimals)); 
-
-      toggleLoader(false);
-    }
     load();
   }, []);
 
@@ -76,7 +78,7 @@ function App() {
     const balance = dusdcCBalance ? dusdcCBalance * (10 ** dusdcDecimals) : 0;
     const requiredAmt = value === 0 || value === null ? 0 : value * (10 ** dusdcDecimals);
     const transactionFee = requiredAmt * 5 / 1000;
-    
+
     setDUSDCTransactionFee(value === 0 || value === null ? '' : `${transactionFee / (10 ** dusdcDecimals)}`);
     if(balance < (requiredAmt + transactionFee)) {
       setErrors({...errors, usdcAmount: `Low USDC balance! Transaction will likely fail!`});
@@ -116,7 +118,9 @@ function App() {
     // Approve INRC_TOKEN_CONTRACT_ADDRESS to access dusd value from user
     try {
       await demoUSDCContract.methods.approve(INRC_TOKEN_CONTRACT_ADDRESS, totalAmount).send({from: account});
-      await inrcTokenContract.methods.buy(dusdcSymbol, amount).send({from: account});;
+      await inrcTokenContract.methods.buy(dusdcSymbol, amount).send({from: account});
+      setMessages({...messages, buyMessage: `Successfully bought INRC tokens!`});
+      load();
     } catch(error) {
       setErrors({...errors, buyError: `Error: ${error.message}`});
       setTimeout(() => {
@@ -135,7 +139,9 @@ function App() {
     // Approve INRC_TOKEN_CONTRACT_ADDRESS to access inrc value from user
     try {
       await inrcTokenContract.methods.approve(INRC_TOKEN_CONTRACT_ADDRESS, totalAmount).send({from: account});
-      await inrcTokenContract.methods.redeem(dusdcSymbol, amount).send({from: account});;
+      await inrcTokenContract.methods.redeem(dusdcSymbol, amount).send({from: account});
+      setMessages({...messages, redeemMessage: `Successfully redeemed INRC tokens!`});
+      load();
     } catch(error) {
       setErrors({...errors, redeemError: `Error: ${error.message}`});
       setTimeout(() => {
@@ -168,6 +174,7 @@ function App() {
             </Form.Group><br></br>
             <Form.Group>
               <Form.Label className="error" type="invalid">{errors.buyError}</Form.Label><br></br>
+              <Form.Label className="message">{messages.buyMessage}</Form.Label><br></br>
             </Form.Group><br></br>
             <Button variant="primary" type="submit">
               BUY
@@ -186,7 +193,10 @@ function App() {
             <Form.Group>
               <Form.Label>Redeem using INRC</Form.Label><br></br>
               <NumericInput precision={0} class="form-control" type="text" placeholder="INRC Amount" onChange={handleINRCInput} />
+            </Form.Group><br></br>
+            <Form.Group>
               <Form.Label className="error" type="invalid">{errors.inrcAmount}</Form.Label><br></br>
+              <Form.Label className="message">{messages.redeemMessage}</Form.Label><br></br>
             </Form.Group><br></br>
             <Button variant="primary" type="submit">
               REDEEM
